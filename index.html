@@ -121,6 +121,216 @@ p { margin-bottom:20px; opacity:0.85; }
 .add-note button:hover { background:#1d4ed8; }
 
 .note {
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1));
+  border-radius:15px;
+  padding:20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  position:relative;
+  color:#fff;
+  word-wrap: break-word;
+  transition: transform 0.3s, box-shadow 0.3s, opacity 0.5s;
+  opacity:0;
+}
+.note.show { opacity:1; }
+
+.note:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+}
+
+.note p { margin-bottom:10px; }
+.note img { width:100%; border-radius:12px; margin-top:8px; }
+.note iframe { width:100%; border-radius:12px; margin-top:8px; border:none; }
+
+.delete-btn {
+  position:absolute;
+  top:10px;
+  right:10px;
+  background:#ef4444;
+  border:none;
+  padding:5px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  color:#fff;
+  font-weight:bold;
+  transition:0.3s;
+}
+.delete-btn:hover { background:#b91c1c; }
+
+@media(max-width:600px) {
+  .add-note textarea { font-size:0.9rem; }
+  h1 { font-size:1.7rem; }
+  .note iframe { height:100px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="password-screen" id="passwordScreen">
+    <h1>Enter Admin Password</h1>
+    <input type="password" id="passwordInput" placeholder="Password">
+    <button onclick="checkPassword()">Enter</button>
+    <button onclick="continueAsGuest()">Continue as Guest</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="notes-area" id="notesArea">
+    <h1>Secret Notes</h1>
+    <p>Write your unsaid letters or messages below. Guests can only view.</p>
+
+    <div class="add-note" id="addNote">
+      <textarea placeholder="Write a note..."></textarea>
+      <input type="text" placeholder="Optional GIF/Image URL or Spotify URL">
+      <button onclick="saveNote()">Save Note</button>
+    </div>
+
+    <div class="notes-display" id="notesDisplay"></div>
+  </div>
+
+</div>
+
+<script>
+const PASSWORD = "Saina";
+let isAdmin = false;
+let notes = JSON.parse(localStorage.getItem('myNotes') || "[]");
+
+function checkPassword() {
+  const input = document.getElementById('passwordInput').value;
+  const errorMsg = document.getElementById('errorMsg');
+  if(input === PASSWORD) {
+    isAdmin = true;
+    showNotesArea();
+  } else {
+    errorMsg.innerText = "Incorrect password!";
+  }
+}
+
+function continueAsGuest() {
+  isAdmin = false;
+  showNotesArea();
+}
+
+function showNotesArea() {
+  document.getElementById('passwordScreen').style.display = 'none';
+  document.getElementById('notesArea').style.display = 'flex';
+  document.getElementById('addNote').style.display = isAdmin ? 'flex' : 'none';
+  renderNotes();
+}
+
+function saveNote() {
+  const noteDiv = document.getElementById('addNote');
+  const text = noteDiv.querySelector('textarea').value.trim();
+  const optional = noteDiv.querySelector('input').value.trim();
+  if(text === "" && optional === "") return;
+
+  notes.unshift({ text, optional });
+  localStorage.setItem('myNotes', JSON.stringify(notes));
+  noteDiv.querySelector('textarea').value = "";
+  noteDiv.querySelector('input').value = "";
+  renderNotes();
+}
+
+function deleteNote(index) {
+  notes.splice(index,1);
+  localStorage.setItem('myNotes', JSON.stringify(notes));
+  renderNotes();
+}
+
+function renderNotes() {
+  const display = document.getElementById('notesDisplay');
+  display.innerHTML = '';
+  notes.forEach((note, idx) => {
+    const div = document.createElement('div');
+    div.className = 'note';
+    let content = `<p>${note.text.replace(/\n/g,'<br>')}</p>`;
+
+    if(note.optional) {
+      if(note.optional.includes("spotify") || note.optional.includes("open.spotify")) {
+        // detect type: track, playlist, album
+        let parts = note.optional.split("/");
+        let type = parts[parts.length-2];
+        let id = parts[parts.length-1].split("?")[0];
+        let embedSrc = `https://open.spotify.com/embed/${type}/${id}`;
+        let height = type === "track" ? 80 : 380;
+        content += `<iframe src="${embedSrc}" height="${height}" allow="encrypted-media" allowtransparency="true" allowfullscreen></iframe>`;
+      } else if(note.optional.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+        content += `<img src="${note.optional}">`;
+      } else {
+        content += `<p style="opacity:0.8;">${note.optional}</p>`;
+      }
+    }
+
+    if(isAdmin) content += `<button class="delete-btn" onclick="deleteNote(${idx})">Delete</button>`;
+    div.innerHTML = content;
+    display.appendChild(div);
+    setTimeout(()=>div.classList.add("show"),50); // fade-in animation
+  });
+}
+
+document.getElementById('passwordInput').addEventListener("keypress", function(e){
+  if(e.key === "Enter") checkPassword();
+});
+</script>
+
+</body>
+</html>  background: rgba(0,0,0,0.25);
+}
+
+.password-screen button {
+  padding:10px 20px;
+  border:none;
+  border-radius:12px;
+  background:#3b82f6;
+  color:#fff;
+  cursor:pointer;
+  transition:0.3s;
+  margin-bottom:10px;
+}
+
+.password-screen button:hover { background:#2563eb; transform:scale(1.05); }
+
+.error-msg { color:#f87171; margin-top:10px; opacity:0.9; }
+
+.notes-area { display:none; flex-direction:column; gap:20px; }
+.add-note { display:flex; flex-direction:column; gap:15px; margin-bottom:30px; }
+.add-note textarea {
+  width:100%;
+  border:none;
+  border-radius:12px;
+  padding:12px;
+  resize:none;
+  outline:none;
+  min-height:50px;
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  font-size:1rem;
+}
+.add-note input {
+  width:100%;
+  border:none;
+  border-radius:10px;
+  padding:8px;
+  outline:none;
+  background: rgba(0,0,0,0.2);
+  color:#fff;
+  font-size:0.95rem;
+}
+.add-note button {
+  width:150px;
+  align-self:flex-end;
+  padding:10px 15px;
+  border:none;
+  border-radius:10px;
+  background:#2563eb;
+  color:#fff;
+  cursor:pointer;
+  transition:0.3s;
+}
+.add-note button:hover { background:#1d4ed8; }
+
+.note {
   background: rgba(255,255,255,0.08);
   border-radius:15px;
   padding:20px;
